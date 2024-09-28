@@ -58,7 +58,7 @@ async def main():
                         parsed_url = urlparse(image_url)
 
                         filename = await filterFilename(parsed_url.path.split("/")[-1])
-                        artistName = parsed_url.path.split("/")[-2][2:9]
+                        artistName = parsed_url.path.split("/")[-2][2:].split("_")[0]
                         file_path = os.path.join(download_dir, artistName, filename)
 
                         if not os.path.exists(f"downloads/{artistName}"):
