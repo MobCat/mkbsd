@@ -21,6 +21,18 @@ async def download_image(session, image_url, file_path):
     except Exception as e:
         print(f"Error downloading image: {str(e)}")
 
+async def filterFilename(filename):
+    # There are libs for this, but ~ is not a URL char sooo..
+    charFilter = {
+        "~": " ",
+        "%2C": ",",
+        "%5B": "[",
+        "%5D": "]"
+    }
+    for old, new in charFilter.items():
+        filename = filename.replace(old, new)
+    return filename
+
 async def main():
     try:
         async with aiohttp.ClientSession() as session:
@@ -42,14 +54,21 @@ async def main():
                 for key, subproperty in data.items():
                     if subproperty and subproperty.get('dhd'):
                         image_url = subproperty['dhd']
-                        print(f"🔍 Found image URL!")
+                        print(f"🔍 Found image URL! {image_url.split('?')[0]}")
                         parsed_url = urlparse(image_url)
-                        ext = os.path.splitext(parsed_url.path)[-1] or '.jpg'
-                        filename = f"{file_index}{ext}"
-                        file_path = os.path.join(download_dir, filename)
 
-                        await download_image(session, image_url, file_path)
-                        print(f"🖼️ Saved image to {file_path}")
+                        filename = await filterFilename(parsed_url.path.split("/")[-1])
+                        artistName = parsed_url.path.split("/")[-2][2:9]
+                        file_path = os.path.join(download_dir, artistName, filename)
+
+                        if not os.path.exists(f"downloads/{artistName}"):
+                            os.makedirs(f"downloads/{artistName}")
+
+                        if not os.path.exists(file_path):
+                            await download_image(session, image_url, file_path)
+                            print(f"🖼️ Saved image to {file_path}\n")
+                        else:
+                            print(f"✔️ Image already downloaded {file_path}\n")
 
                         file_index += 1
                         await delay(250)
